@@ -110,6 +110,18 @@ def probe(src: Path) -> dict:
             "audio": has_audio, "video": has_video}
 
 
+def load_wav(path: Path):
+    """WAV PCM 16 bits mono → tableau numpy float32 entre -1 et 1 (format attendu par Whisper)."""
+    import wave
+
+    import numpy as np
+    with wave.open(str(path), "rb") as w:
+        if w.getsampwidth() != 2 or w.getnchannels() != 1:
+            raise RuntimeError("Format audio intermédiaire inattendu (PCM 16 bits mono attendu).")
+        data = w.readframes(w.getnframes())
+    return np.frombuffer(data, dtype=np.int16).astype(np.float32) / 32768.0
+
+
 def get_model(name: str):
     if name not in _model_cache:
         from faster_whisper import WhisperModel
@@ -128,7 +140,9 @@ def transcribe(jid, wav, duration, model_name, language):
         raise RuntimeError(
             f"Impossible de charger le modèle « {model_name} » ({e}). Au 1er lancement, "
             "la machine doit avoir accès à Internet (huggingface.co) pour le télécharger.") from e
-    segments, info = model.transcribe(str(wav), language=language or None,
+    # On donne directement les échantillons audio (WAV 16 kHz mono produit par ffmpeg) : faster-whisper
+    # n'a pas à relire le fichier avec PyAV, dont la version 19 n'est plus compatible avec lui.
+    segments, info = model.transcribe(load_wav(wav), language=language or None,
                                       vad_filter=True, beam_size=5)
     upd(jid, stage="Transcription de l'audio", progress=0, language=info.language)
     segs = []
@@ -297,7 +311,7 @@ def process(jid: str):
             upd(jid, stage="Extraction de l'audio", progress=0)
             wav = d / "audio.wav"
             r = subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
-                                "-i", str(src), "-vn", "-ac", "1", "-ar", "16000", str(wav)],
+                                "-i", str(src), "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(wav)],
                                capture_output=True, text=True)
             if r.returncode:
                 raise RuntimeError("Extraction audio impossible : " + r.stderr[-300:])
