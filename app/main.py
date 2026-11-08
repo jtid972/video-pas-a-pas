@@ -3,13 +3,15 @@
 # Code réalisé avec l'assistance de Claude (IA d'Anthropic) pour la génération de code.
 """Vidéo pas à pas : prépare une vidéo (ou un fichier audio) pour une IA.
 
-Produit un ZIP contenant :
-  - transcription.txt / .srt / .json (texte horodaté)
-  - images/ (captures aux changements de plan + à intervalle régulier)
-  - preparation.md (texte et captures dans l'ordre chronologique)
-  - LISEZMOI.md et CONSIGNE_IA.md (à quoi sert le ZIP, consigne prête à coller)
+Produit, au choix :
+  - un **PDF unique** (par défaut) : consigne + captures et transcript dans l'ordre
+    chronologique + transcription complète en fin de document — un seul fichier à donner
+    à une IA (texte et/ou images), y compris celles qui n'acceptent pas les ZIP ;
+  - un **ZIP** (option avancée) contenant les fichiers séparés :
+    transcription.txt / .srt / .json, images/, preparation.md, LISEZMOI.md, CONSIGNE_IA.md.
 """
 import base64
+import io
 import json
 import os
 import queue
@@ -290,6 +292,101 @@ def write_outputs(out, title, meta, segs, frames):
     (out / "preparation.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+# ---------------------------------------------------------------- PDF (format par défaut)
+PDF_IMG_MAX_W = 1280   # largeur max (px) des captures réencodées dans le PDF
+PDF_IMG_QUALITY = 78   # qualité JPEG de réencodage : fichier léger, toujours lisible par une IA
+
+
+def _pdf_image(path: Path):
+    """Redimensionne/réencode une capture pour le PDF ; renvoie (JPEG en mémoire, largeur, hauteur)."""
+    from PIL import Image as PILImage
+    with PILImage.open(path) as im:
+        im = im.convert("RGB")
+        if im.width > PDF_IMG_MAX_W:
+            h = round(im.height * PDF_IMG_MAX_W / im.width)
+            im = im.resize((PDF_IMG_MAX_W, h), PILImage.LANCZOS)
+        buf = io.BytesIO()
+        im.save(buf, format="JPEG", quality=PDF_IMG_QUALITY, optimize=True)
+        buf.seek(0)
+        return buf, im.width, im.height
+
+
+def build_pdf(pdf_path: Path, out: Path, title: str, meta: dict, segs: list, frames: list):
+    """Construit un PDF unique : consigne, puis captures + texte dans l'ordre chronologique,
+    puis la transcription complète — pensé pour être donné en une fois à une IA (texte et/ou
+    images), y compris celles qui n'acceptent pas les fichiers ZIP (ex. Copilot)."""
+    from reportlab.lib.enums import TA_LEFT
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import cm
+    from reportlab.platypus import Image as RLImage
+    from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
+
+    def esc(s: str) -> str:  # échappement minimal (Paragraph interprète un sous-ensemble de HTML)
+        return (s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    styles = getSampleStyleSheet()
+    h1 = ParagraphStyle("TitreVPAP", parent=styles["Heading1"])
+    h2 = ParagraphStyle("SousTitreVPAP", parent=styles["Heading2"], spaceBefore=10)
+    body = ParagraphStyle("CorpsVPAP", parent=styles["BodyText"], spaceAfter=6)
+    quote = ParagraphStyle("PassageVPAP", parent=styles["BodyText"], leftIndent=10, spaceAfter=4)
+    caption = ParagraphStyle("LegendeVPAP", parent=styles["Italic"], alignment=TA_LEFT,
+                             fontSize=9, textColor="#666666", spaceAfter=14)
+
+    doc = SimpleDocTemplate(str(pdf_path), pagesize=A4, topMargin=1.8 * cm, bottomMargin=1.8 * cm,
+                            leftMargin=1.8 * cm, rightMargin=1.8 * cm,
+                            title=f"Préparation : {title}", author=f"{APP_NAME} {__version__}")
+    note = ""
+    if meta["source"] == "audio":
+        note = "Source audio uniquement : il n'y a pas de captures d'écran."
+    elif not segs:
+        note = "Pas de transcription (pas de piste audio, ou option désactivée) : seules les captures sont fournies."
+
+    story = [
+        Paragraph(f"Préparation : {esc(title)}", h1),
+        Paragraph(f"Document produit par {APP_NAME} v{__version__}, destiné à servir d'entrée à une "
+                   "IA (texte et/ou images) pour rédiger un tutoriel, un guide ou une note de synthèse.", body),
+        Paragraph(esc(f"Source : {'audio' if meta['source'] == 'audio' else 'vidéo'} — "
+                      f"durée {ts(meta['duration'])} — langue détectée : {meta.get('language') or 'n/a'} — "
+                      f"{len(segs)} passage(s) transcrit(s), {len(frames)} capture(s)."), body),
+    ]
+    if note:
+        story.append(Paragraph(esc(note), caption))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Consigne pour l'IA", h2))
+    for line in CONSIGNE.strip().splitlines():
+        if line.strip():
+            story.append(Paragraph(esc(line), body))
+    story.append(PageBreak())
+
+    story.append(Paragraph("Contenu, dans l'ordre chronologique", h2))
+    max_w, max_h = doc.width, doc.height - 40
+    events = [(s["start"], 1, s) for s in segs] + [(f["time"], 0, f) for f in frames]
+    for t, kind, item in sorted(events, key=lambda e: (e[0], e[1])):
+        if kind == 1:
+            story.append(Paragraph(f"<b>[{ts(t)}]</b> {esc(item['text'])}", quote))
+            continue
+        try:
+            buf, w, h = _pdf_image(out / item["file"])
+            disp_w, disp_h = max_w, max_w * h / w
+            if disp_h > max_h:
+                disp_w, disp_h = max_h * w / h, max_h
+            story.append(RLImage(buf, width=disp_w, height=disp_h))
+            story.append(Paragraph(esc(f"Capture {ts(t)} — {item['file']}"), caption))
+        except Exception as e:  # noqa: BLE001
+            story.append(Paragraph(esc(f"[capture {ts(t)} illisible : {item['file']} — {e}]"), caption))
+
+    story.append(PageBreak())
+    story.append(Paragraph("Transcription complète", h2))
+    if segs:
+        for s in segs:
+            story.append(Paragraph(f"<b>[{ts(s['start'])}]</b> {esc(s['text'])}", quote))
+    else:
+        story.append(Paragraph("Aucune transcription disponible pour cette source.", body))
+
+    doc.build(story)
+
+
 def process(jid: str):
     j = jobs[jid]
     d = JOBS / jid
@@ -326,16 +423,20 @@ def process(jid: str):
         scenes = detect_scenes(jid, src, dur)
         frames = extract_frames(jid, src, pick_times(scenes, dur), img_dir)
 
-    upd(jid, stage="Création du ZIP", progress=0)
+    fmt = j.get("format") or "pdf"
     write_outputs(out, j["filename"], meta, segs, frames)
-    zpath = d / "resultat.zip"
-    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in sorted(out.rglob("*")):
-            if f.is_file():
-                z.write(f, f.relative_to(out))
+    if fmt == "zip":
+        upd(jid, stage="Création du ZIP", progress=0)
+        with zipfile.ZipFile(d / "resultat.zip", "w", zipfile.ZIP_DEFLATED) as z:
+            for f in sorted(out.rglob("*")):
+                if f.is_file():
+                    z.write(f, f.relative_to(out))
+    else:
+        upd(jid, stage="Création du PDF", progress=0)
+        build_pdf(d / "resultat.pdf", out, j["filename"], meta, segs, frames)
     shutil.rmtree(out, ignore_errors=True)
     src.unlink(missing_ok=True)  # on ne garde pas le fichier source
-    upd(jid, status="done", stage="Terminé", progress=100,
+    upd(jid, status="done", stage="Terminé", progress=100, format=fmt,
         summary=f"{len(segs)} passages transcrits, {len(frames)} captures")
 
 
@@ -396,13 +497,18 @@ async def save_upload(file: UploadFile) -> tuple[str, str]:
     return jid, source
 
 
-def start_job(jid, source, filename, language, model, transcribe_audio, images):
+OUTPUT_FORMATS = ("pdf", "zip")
+
+
+def start_job(jid, source, filename, language, model, transcribe_audio, images, output_format):
     if model not in MODELS:
         raise HTTPException(400, "Modèle inconnu")
+    if output_format not in OUTPUT_FORMATS:
+        raise HTTPException(400, "Format de sortie inconnu")
     with jobs_lock:
         jobs[jid] = {"id": jid, "filename": filename or "media", "source": source,
                      "language": (language or "").strip() or None, "model": model,
-                     "transcribe": transcribe_audio, "images": images,
+                     "transcribe": transcribe_audio, "images": images, "format": output_format,
                      "status": "queued", "stage": "En attente", "progress": 0}
     upd(jid)
     work_queue.put(jid)
@@ -412,11 +518,11 @@ def start_job(jid, source, filename, language, model, transcribe_audio, images):
 @app.post("/api/jobs")
 async def create_job(file: UploadFile = File(...), language: str = Form(""),
                      model: str = Form(DEFAULT_MODEL), transcribe_audio: bool = Form(True),
-                     images: bool = Form(True)):
+                     images: bool = Form(True), output_format: str = Form("pdf")):
     if model not in MODELS:
         raise HTTPException(400, "Modèle inconnu")
     jid, source = await save_upload(file)
-    return start_job(jid, source, file.filename, language, model, transcribe_audio, images)
+    return start_job(jid, source, file.filename, language, model, transcribe_audio, images, output_format)
 
 
 # Partage depuis un téléphone (application installée) : « Partager » → Vidéo pas à pas.
@@ -443,11 +549,12 @@ def shared_info(jid: str):
 
 @app.post("/api/shared/{jid}/start")
 def shared_start(jid: str, language: str = Form(""), model: str = Form(DEFAULT_MODEL),
-                 transcribe_audio: bool = Form(True), images: bool = Form(True)):
+                 transcribe_audio: bool = Form(True), images: bool = Form(True),
+                 output_format: str = Form("pdf")):
     s = shared.pop(jid, None)
     if not s:
         raise HTTPException(404, "Fichier partagé introuvable")
-    return start_job(jid, s["source"], s["filename"], language, model, transcribe_audio, images)
+    return start_job(jid, s["source"], s["filename"], language, model, transcribe_audio, images, output_format)
 
 
 @app.get("/api/jobs/{jid}")
@@ -462,11 +569,15 @@ def job_status(jid: str):
 @app.get("/api/jobs/{jid}/download")
 def download(jid: str):
     j = jobs.get(jid)
-    z = JOBS / jid / "resultat.zip"
-    if not j or j.get("status") != "done" or not z.exists():
+    if not j or j.get("status") != "done":
         raise HTTPException(404, "Résultat pas encore prêt")
-    name = Path(j["filename"]).stem + "_preparation_IA.zip"
-    return FileResponse(z, filename=name, media_type="application/zip")
+    is_zip = j.get("format") == "zip"
+    p = JOBS / jid / ("resultat.zip" if is_zip else "resultat.pdf")
+    if not p.exists():
+        raise HTTPException(404, "Résultat pas encore prêt")
+    ext, mt = ("zip", "application/zip") if is_zip else ("pdf", "application/pdf")
+    name = Path(j["filename"]).stem + f"_preparation_IA.{ext}"
+    return FileResponse(p, filename=name, media_type=mt)
 
 
 # ---------------------------------------------------------------- application installable (PWA)

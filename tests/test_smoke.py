@@ -41,7 +41,10 @@ def media(tmp_path_factory):
 
 
 def run_job(path, **form):
-    data = {"transcribe_audio": "false", "images": "true", "model": "tiny", **form}
+    # format=zip par défaut dans les tests existants : ils inspectent le contenu fichier par
+    # fichier. Le format par défaut de l'application (voir test_sortie_pdf_par_defaut) est pdf.
+    data = {"transcribe_audio": "false", "images": "true", "model": "tiny",
+            "output_format": "zip", **form}
     with open(path, "rb") as f:
         r = client.post("/api/jobs", files={"file": (path.name, f)}, data=data)
     assert r.status_code == 200, r.text
@@ -80,6 +83,38 @@ def test_video_captures_plans(media):
     for f in ("preparation.md", "LISEZMOI.md", "CONSIGNE_IA.md", "transcription.json"):
         assert f in zf.namelist()
     assert "dossier de préparation" in zf.read("LISEZMOI.md").decode().lower()
+
+
+def test_sortie_pdf_par_defaut(media):
+    """Le format par défaut (sans output_format) est le PDF unique, lisible par une IA qui
+    n'accepte pas les ZIP (ex. Copilot)."""
+    from pypdf import PdfReader
+
+    data = {"transcribe_audio": "false", "images": "true", "model": "tiny"}  # pas d'output_format
+    with open(media / "video.mp4", "rb") as f:
+        r = client.post("/api/jobs", files={"file": ("video.mp4", f)}, data=data)
+    jid = r.json()["id"]
+    for _ in range(240):
+        j = client.get(f"/api/jobs/{jid}").json()
+        if j["status"] in ("done", "error"):
+            break
+        time.sleep(0.5)
+    assert j["status"] == "done", j.get("message")
+    assert j["format"] == "pdf"
+    rep = client.get(f"/api/jobs/{jid}/download")
+    assert rep.status_code == 200
+    assert rep.headers["content-type"] == "application/pdf"
+    assert rep.headers["content-disposition"].endswith('.pdf"')
+    reader = PdfReader(io.BytesIO(rep.content))
+    texte = "\n".join(p.extract_text() for p in reader.pages)
+    assert "Préparation" in texte and "Consigne pour l'IA" in texte and "Transcription complète" in texte
+    assert len(reader.pages) >= 3  # page de garde + au moins une capture + transcription
+
+
+def test_sortie_zip_explicite(media):
+    j, zf = run_job(media / "video.mp4", output_format="zip")
+    assert j["format"] == "zip"
+    assert "preparation.md" in zf.namelist()
 
 
 @pytest.mark.parametrize("name", ["son.mp3", "son_pochette.mp3", "son.m4a"])

@@ -63,7 +63,7 @@
     <h1>Vidéo pas à pas</h1>
     <button id="install" class="hidden" type="button">Installer</button>
   </header>
-  <p class="sub">Transforme une vidéo ou un enregistrement audio en <strong>ZIP de préparation</strong> (transcription horodatée + captures d'écran), prêt à être donné à une IA qui lit le texte et/ou les images pour en faire un tutoriel, un guide ou une note de synthèse.</p>
+  <p class="sub">Transforme une vidéo ou un enregistrement audio en <strong>document de préparation</strong> (transcription horodatée + captures d'écran) — un <strong>PDF unique</strong> par défaut, prêt à être donné en une fois à une IA qui lit le texte et/ou les images, pour en faire un tutoriel, un guide ou une note de synthèse.</p>
 
   <p id="iosHint" class="note hidden">Pour installer l'application sur iPhone ou iPad : bouton <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong>.</p>
 
@@ -92,6 +92,15 @@
         <select id="model"></select>
         <small class="hint">Plus précis = plus lent sans carte graphique.</small>
       </div>
+    </div>
+
+    <div>
+      <label for="fmt">Format du résultat</label>
+      <select id="fmt">
+        <option value="pdf" selected>PDF unique (recommandé — à donner directement à l'IA)</option>
+        <option value="zip">ZIP (fichiers séparés, usage avancé)</option>
+      </select>
+      <small class="hint">Le PDF regroupe consigne, captures et transcript dans un seul fichier, y compris pour les IA qui n'acceptent pas les ZIP. Le ZIP sépare les fichiers (images, texte) pour un usage avancé.</small>
     </div>
 
     <div class="checks">
@@ -182,6 +191,7 @@ $("go").onclick = () => {
   fd.append("model", $("model").value);
   fd.append("transcribe_audio", $("tr").checked);
   fd.append("images", $("img").checked);
+  fd.append("output_format", $("fmt").value);
   const xhr = new XMLHttpRequest();
   xhr.open("POST", sharedId ? "/api/shared/" + sharedId + "/start" : "/api/jobs");
   xhr.upload.onprogress = e => e.lengthComputable && setBar("upBar", e.loaded / e.total * 100, "upPct");
@@ -204,8 +214,11 @@ function poll(id) {
     setBar("jobBar", j.progress || 0, "jobPct");
     if (j.status === "done") {
       clearInterval(timer);
-      msg((j.warning ? j.warning + "<br>" : "") + "Terminé : " + j.summary + ". Le ZIP contient un LISEZMOI et une consigne prête à coller dans l'IA" +
-          ".<br><br><a class='btn' href='/api/jobs/" + id + "/download'>Télécharger le ZIP de préparation</a>");
+      const pdf = j.format !== "zip";
+      msg((j.warning ? j.warning + "<br>" : "") + "Terminé : " + j.summary +
+          (pdf ? ". Document PDF unique prêt à être donné à l'IA (consigne, captures et transcript inclus)"
+               : ". Le ZIP contient un LISEZMOI et une consigne prête à coller dans l'IA") +
+          ".<br><br><a class='btn' href='/api/jobs/" + id + "/download'>Télécharger le " + (pdf ? "PDF" : "ZIP") + "</a>");
       $("go").disabled = false;
     } else if (j.status === "error") {
       clearInterval(timer);

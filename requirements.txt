@@ -3,3 +3,5 @@ fastapi==0.162.2
 uvicorn[standard]==0.54.0
 python-multipart==0.0.32
 faster-whisper==1.2.1
+reportlab==5.1.0     # génération du PDF unique (format de sortie par défaut)
+pillow==13.0.0        # redimensionnement/réencodage des captures avant insertion dans le PDF

@@ -79,6 +79,8 @@ compatibles avec l'AGPL-3.0.
 | [FastAPI](https://github.com/fastapi/fastapi) | serveur web | MIT |
 | [Uvicorn](https://github.com/encode/uvicorn) | serveur HTTP | BSD-3-Clause |
 | [python-multipart](https://github.com/Kludex/python-multipart) | réception des fichiers | Apache-2.0 |
+| [ReportLab](https://www.reportlab.com/opensource/) | génération du PDF unique (format par défaut) | BSD-3-Clause |
+| [Pillow](https://python-pillow.github.io/) | redimensionnement/réencodage des captures avant insertion dans le PDF | MIT-CMU (HPND) |
 
 **Images Docker** : elles contiennent Debian (ou Ubuntu pour la variante GPU), Python et le
 paquet `ffmpeg` de la distribution, sous licence GPL. Leur code source correspondant est
