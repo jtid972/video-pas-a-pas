@@ -89,4 +89,5 @@ Une **licence commerciale** est disponible auprès de l'auteur pour un usage san
 obligations. Détails, conditions supplémentaires et composants tiers : [NOTICE.md](NOTICE.md).
 Contributions : [CONTRIBUTING.md](CONTRIBUTING.md).
 
-**Code réalisé avec l'assistance de Claude, l'IA d'Anthropic**, pour la génération de code.
+**Code réalisé avec l'assistance de Claude (IA d'Anthropic) et de Mistral Vibe (IA Mistral)**,
+pour la génération de code.

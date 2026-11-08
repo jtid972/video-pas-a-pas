@@ -1,6 +1,6 @@
 # Vidéo pas à pas — Copyright (c) 2026 Johan TIDAS
 # SPDX-License-Identifier: AGPL-3.0-or-later  (voir LICENSE et NOTICE.md ; licence commerciale possible)
-# Code réalisé avec l'assistance de Claude (IA d'Anthropic) pour la génération de code.
+# Code réalisé avec l'assistance de Claude (IA d'Anthropic) et de Mistral Vibe (IA Mistral) pour la génération de code.
 """Vidéo pas à pas : prépare une vidéo (ou un fichier audio) pour une IA.
 
 Entrée : un fichier déposé, ou (si activé) l'adresse d'une vidéo YouTube.

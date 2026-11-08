@@ -42,7 +42,7 @@ Conformément à l'article 7, paragraphes b) et e), de la licence :
 1. **Attributions à conserver.** Toute copie ou version modifiée doit conserver, dans sa
    documentation et dans le pied de page de son interface web, les mentions suivantes :
    - « Vidéo pas à pas — Copyright (c) 2026 Johan TIDAS » ;
-   - « Code réalisé avec l'assistance de Claude, l'IA d'Anthropic ».
+   - « Code réalisé avec l'assistance de Claude (IA d'Anthropic) et de Mistral Vibe (IA Mistral) ».
 2. **Nom.** La licence n'accorde aucun droit d'utiliser le nom « Vidéo pas à pas » pour
    désigner une version modifiée ou un service dérivé, sauf pour indiquer honnêtement l'origine
    du logiciel (« basé sur Vidéo pas à pas »).
@@ -58,9 +58,9 @@ L'auteur vous répondra pour poursuivre l'échange en privé.
 
 ## Assistance par intelligence artificielle
 
-Le code et la documentation de ce projet ont été réalisés **avec l'assistance de Claude,
-l'IA d'Anthropic**, pour la génération de code. La conception, les choix fonctionnels, la
-relecture, les tests et la maintenance sont assurés par l'auteur.
+Le code et la documentation de ce projet ont été réalisés **avec l'assistance de Claude
+(IA d'Anthropic) et de Mistral Vibe (IA Mistral)**, pour la génération de code. La conception,
+les choix fonctionnels, la relecture, les tests et la maintenance sont assurés par l'auteur.
 
 ## Composants tiers
 
