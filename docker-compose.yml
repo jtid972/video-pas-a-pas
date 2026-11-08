@@ -1,0 +1,21 @@
+# Vidéo pas à pas — lancement local (Linux, Windows avec Docker Desktop, macOS avec Docker Desktop)
+#   docker compose up -d --build      puis ouvrir http://localhost:8080
+services:
+  video-pas-a-pas:
+    build: .
+    image: video-pas-a-pas:local
+    ports:
+      - "127.0.0.1:8080:8000"   # remplacer par "8080:8000" pour l'ouvrir au réseau local
+    volumes:
+      - vpap-data:/data          # modèles téléchargés + travaux en cours (conservés)
+    environment:
+      MODELS_DIR: /data/models   # garde les modèles entre deux redémarrages
+      WHISPER_MODEL: small       # tiny | base | small | medium | large-v3
+      SCENE_THRESHOLD: "0.3"     # 0.2 = plus de captures, 0.4 = moins
+      FRAME_INTERVAL: "30"       # au moins une capture toutes les 30 s
+      KEEP_HOURS: "48"           # résultats supprimés après 48 h
+      # APP_PASSWORD: "change-moi"   # à activer si l'outil est ouvert au réseau
+    restart: unless-stopped
+
+volumes:
+  vpap-data:

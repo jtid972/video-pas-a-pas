@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f5d50">
+<title>Vidéo pas à pas</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/static/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vidéo pas à pas">
+<style>
+  :root { --bg:#f6f5f2; --card:#fff; --ink:#1d1d1b; --muted:#6b6a66; --line:#e3e1db; --accent:#2f5d50; --accent-ink:#fff; --err:#a33; --soft:#eef4f1; --field:#fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141517; --card:#1e2023; --ink:#ececea; --muted:#a3a29c; --line:#34373b; --accent:#7cc4a8;
+            --accent-ink:#0f201a; --err:#f2877f; --soft:#1d2b26; --field:#26292d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink);
+         padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  main { max-width:640px; margin:0 auto; padding:28px 16px 40px; }
+  header { display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  header img { width:40px; height:40px; border-radius:10px; }
+  #install { margin-left:auto; padding:8px 12px; font-size:.85rem; background:transparent; color:var(--ink); border:1px solid var(--line); }
+  .note { background:var(--soft); border-radius:8px; padding:8px 12px; font-size:.9rem; margin:0 0 16px; }
+  h1 { font-size:1.45rem; margin:0; }
+  p.sub { color:var(--muted); margin:0 0 28px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px; }
+  #drop { border:2px dashed var(--line); border-radius:10px; padding:36px 16px; text-align:center;
+          cursor:pointer; color:var(--muted); transition:.15s; }
+  #drop.over, #drop:hover { border-color:var(--accent); color:var(--accent); }
+  #drop strong { display:block; color:var(--ink); margin-bottom:4px; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0 12px; }
+  label { font-size:.85rem; color:var(--muted); display:block; }
+  select { width:100%; margin-top:4px; padding:10px; border:1px solid var(--line); border-radius:8px; font:inherit; background:var(--field); color:var(--ink); min-height:44px; }
+  .checks { display:flex; gap:12px 20px; margin:8px 0 20px; flex-wrap:wrap; }
+  .checks input { width:20px; height:20px; accent-color:var(--accent); }
+  .checks label { color:var(--ink); font-size:.95rem; display:flex; gap:6px; align-items:center; }
+  button, a.btn { display:inline-flex; align-items:center; justify-content:center; background:var(--accent); color:var(--accent-ink); border:0; border-radius:10px;
+          padding:12px 18px; min-height:46px; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; }
+  button:disabled { opacity:.45; cursor:default; }
+  .step { margin-top:22px; }
+  .step .lbl { display:flex; justify-content:space-between; font-size:.9rem; margin-bottom:6px; }
+  .bar { height:10px; background:var(--line); border-radius:99px; overflow:hidden; }
+  .bar > div { height:100%; width:0; background:var(--accent); transition:width .3s; }
+  .hidden { display:none; }
+  #msg { margin-top:18px; font-size:.95rem; }
+  #msg.err { color:var(--err); }
+  footer a { color:inherit; }
+  footer { margin-top:20px; font-size:.8rem; color:var(--muted); text-align:center; }
+  small.hint { color:var(--muted); display:block; margin-top:4px; }
+  @media (max-width:520px) {
+    main { padding-top:18px; } h1 { font-size:1.25rem; } .card { padding:16px; }
+    .row { grid-template-columns:1fr; } #go, a.btn { width:100%; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="/static/icons/icon-192.png" alt="">
+    <h1>Vidéo pas à pas</h1>
+    <button id="install" class="hidden" type="button">Installer</button>
+  </header>
+  <p class="sub">Transforme une vidéo ou un enregistrement audio en <strong>ZIP de préparation</strong> (transcription horodatée + captures d'écran), prêt à être donné à une IA qui lit le texte et/ou les images pour en faire un tutoriel, un guide ou une note de synthèse.</p>
+
+  <p id="iosHint" class="note hidden">Pour installer l'application sur iPhone ou iPad : bouton <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong>.</p>
+
+  <div class="card">
+    <div id="drop">
+      <strong id="fname">Glisse une vidéo ou un fichier audio ici</strong>
+      ou clique pour choisir (MP4, MOV, MKV, WEBM, MP3, M4A, WAV, OGG…)
+      <input type="file" id="file" accept="video/*,audio/*" hidden>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="lang">Langue parlée</label>
+        <select id="lang">
+          <option value="">Détection auto</option>
+          <option value="fr" selected>Français</option>
+          <option value="en">Anglais</option>
+          <option value="es">Espagnol</option>
+          <option value="de">Allemand</option>
+          <option value="it">Italien</option>
+          <option value="pt">Portugais</option>
+        </select>
+      </div>
+      <div>
+        <label for="model">Précision de la transcription</label>
+        <select id="model"></select>
+        <small class="hint">Plus précis = plus lent sans carte graphique.</small>
+      </div>
+    </div>
+
+    <div class="checks">
+      <label><input type="checkbox" id="tr" checked> Transcrire l'audio</label>
+      <label><input type="checkbox" id="img" checked> Extraire les captures (vidéo)</label>
+    </div>
+
+    <button id="go" disabled>Lancer la préparation</button>
+
+    <div id="upStep" class="step hidden">
+      <div class="lbl"><span>Envoi du fichier</span><span id="upPct">0 %</span></div>
+      <div class="bar"><div id="upBar"></div></div>
+    </div>
+    <div id="jobStep" class="step hidden">
+      <div class="lbl"><span id="stage">En attente</span><span id="jobPct">0 %</span></div>
+      <div class="bar"><div id="jobBar"></div></div>
+    </div>
+    <div id="msg"></div>
+  </div>
+  <footer><span id="ver">Vidéo pas à pas</span> · Licence AGPL-3.0 · <a id="src" href="#">Code source</a> · Code réalisé avec l'assistance de Claude (IA d'Anthropic)</footer>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const labels = { "tiny":"Très rapide (approximatif)", "base":"Rapide", "small":"Équilibré (conseillé)",
+                 "medium":"Précis (lent sur CPU)", "large-v3":"Très précis (carte graphique conseillée)" };
+let file = null, timer = null, sharedId = null, deferredInstall = null;
+
+// ---------- application installable
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferredInstall = e; $("install").classList.remove("hidden"); });
+$("install").onclick = async () => { if (!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall = null; $("install").classList.add("hidden"); };
+// iPhone / iPad : pas de bouton d'installation automatique, on explique le geste selon le navigateur
+(function iosHint() {
+  const ua = navigator.userAgent;
+  const ios = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const installed = window.navigator.standalone || window.matchMedia("(display-mode: standalone)").matches;
+  if (!ios || installed) return;
+  const device = /iphone|ipod/i.test(ua) ? "iPhone" : "iPad";
+  let how;
+  if (/CriOS/.test(ua)) how = "touchez le bouton <strong>Partager</strong> dans la barre d'adresse, puis <strong>Sur l'écran d'accueil</strong>";
+  else if (/FxiOS|EdgiOS|OPiOS/.test(ua)) how = "ouvrez le menu du navigateur, touchez <strong>Partager</strong>, puis <strong>Sur l'écran d'accueil</strong>";
+  else how = "touchez <strong>⋯</strong> à côté de l'adresse (ou le bouton <strong>Partager</strong>), puis <strong>Partager</strong> et <strong>Sur l'écran d'accueil</strong>";
+  const el = document.getElementById("iosHint");
+  el.innerHTML = `Pour installer l'application sur votre ${device} : ${how}. Elle s'ouvrira ensuite en plein écran, comme une application.`;
+  el.classList.remove("hidden");
+})();
+
+// ---------- fichier partagé depuis le téléphone
+const params = new URLSearchParams(location.search);
+if (params.get("partage")) {
+  fetch("/api/shared/" + encodeURIComponent(params.get("partage"))).then((r) => r.ok ? r.json() : Promise.reject())
+    .then((d) => { sharedId = params.get("partage"); $("fname").textContent = d.filename + " (partagé)"; $("go").disabled = false; })
+    .catch(() => msg("Le fichier partagé est introuvable : choisissez-le à nouveau.", true));
+  history.replaceState(null, "", "/");
+} else if (params.get("erreur")) {
+  setTimeout(() => { $("msg").className = "err"; $("msg").textContent = params.get("erreur"); });
+  history.replaceState(null, "", "/");
+}
+
+fetch("/api/config").then(r => r.json()).then(c => {
+  $("ver").textContent = "Vidéo pas à pas v" + c.version;
+  $("src").href = c.source_url;
+  for (const m of c.models) {
+    const o = new Option(labels[m] || m, m);
+    if (m === c.default_model) o.selected = true;
+    $("model").add(o);
+  }
+});
+
+function pick(f) { if (!f) return; sharedId = null; file = f; $("fname").textContent = f.name + " (" + (f.size/1048576).toFixed(1) + " Mo)"; $("go").disabled = false; }
+$("drop").onclick = () => $("file").click();
+$("file").onchange = e => pick(e.target.files[0]);
+["dragenter","dragover"].forEach(ev => $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.add("over"); }));
+["dragleave","drop"].forEach(ev => $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.remove("over"); }));
+$("drop").addEventListener("drop", e => pick(e.dataTransfer.files[0]));
+
+function setBar(bar, pct, pctEl) { $(bar).style.width = pct + "%"; $(pctEl).textContent = Math.round(pct) + " %"; }
+function msg(t, err) { $("msg").className = err ? "err" : ""; $("msg").innerHTML = t; }
+
+$("go").onclick = () => {
+  if (!file && !sharedId) return;
+  $("go").disabled = true; msg("");
+  $("upStep").classList.remove("hidden"); $("jobStep").classList.add("hidden");
+  const fd = new FormData();
+  if (!sharedId) fd.append("file", file);
+  fd.append("language", $("lang").value);
+  fd.append("model", $("model").value);
+  fd.append("transcribe_audio", $("tr").checked);
+  fd.append("images", $("img").checked);
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", sharedId ? "/api/shared/" + sharedId + "/start" : "/api/jobs");
+  xhr.upload.onprogress = e => e.lengthComputable && setBar("upBar", e.loaded / e.total * 100, "upPct");
+  xhr.onload = () => {
+    if (xhr.status !== 200) { msg("Échec de l'envoi : " + xhr.responseText, true); $("go").disabled = false; return; }
+    setBar("upBar", 100, "upPct");
+    poll(JSON.parse(xhr.responseText).id);
+  };
+  xhr.onerror = () => { msg("Échec de l'envoi (connexion interrompue).", true); $("go").disabled = false; };
+  xhr.send(fd);
+};
+
+function poll(id) {
+  $("jobStep").classList.remove("hidden");
+  clearInterval(timer);
+  timer = setInterval(async () => {
+    let j;
+    try { j = await (await fetch("/api/jobs/" + id)).json(); } catch { return; }
+    $("stage").textContent = j.queue_position ? "En file d'attente (position " + j.queue_position + ")" : j.stage;
+    setBar("jobBar", j.progress || 0, "jobPct");
+    if (j.status === "done") {
+      clearInterval(timer);
+      msg((j.warning ? j.warning + "<br>" : "") + "Terminé : " + j.summary + ". Le ZIP contient un LISEZMOI et une consigne prête à coller dans l'IA" +
+          ".<br><br><a class='btn' href='/api/jobs/" + id + "/download'>Télécharger le ZIP de préparation</a>");
+      $("go").disabled = false;
+    } else if (j.status === "error") {
+      clearInterval(timer);
+      msg("Erreur : " + j.message, true);
+      $("go").disabled = false;
+    }
+  }, 1000);
+}
+</script>
+</body>
+</html>

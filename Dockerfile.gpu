@@ -1,0 +1,28 @@
+# Vidéo pas à pas — variante carte graphique NVIDIA (CUDA 12 + cuDNN 9, requis par faster-whisper >= 1.1)
+# Copyright (c) 2026 Johan TIDAS — AGPL-3.0-or-later
+# Non testée en intégration continue (pas de GPU sur les runners GitHub).
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --uid 10001 --create-home --shell /usr/sbin/nologin app
+
+WORKDIR /srv
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+ENV DATA_DIR=/data \
+    MODELS_DIR=/data/models \
+    WHISPER_MODEL=large-v3 \
+    WHISPER_DEVICE=cuda \
+    WHISPER_COMPUTE=float16 \
+    PYTHONUNBUFFERED=1
+RUN mkdir -p /data && chown -R app:app /data
+
+COPY app ./app
+COPY LICENSE NOTICE.md ./
+USER app
+VOLUME /data
+EXPOSE 8000
+CMD ["sh", "-c", "exec python3 -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

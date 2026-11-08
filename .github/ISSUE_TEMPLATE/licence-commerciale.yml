@@ -1,0 +1,58 @@
+name: Demande de licence commerciale
+description: Utiliser Vidéo pas à pas sans les obligations de l'AGPL-3.0 (produit fermé, service non publié…)
+title: "[Licence commerciale] "
+labels: ["licence-commerciale"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de votre intérêt pour une licence commerciale de **Vidéo pas à pas**.
+
+        ⚠️ **Ce ticket est public.** N'indiquez ici ni prix, ni données confidentielles, ni adresse
+        e-mail personnelle. L'auteur vous répondra dans ce ticket pour poursuivre l'échange en privé.
+
+        Rappel : utiliser le logiciel tel quel, même dans une entreprise, ne nécessite **pas** de
+        licence commerciale. Elle n'est utile que si vous voulez le modifier ou l'intégrer
+        **sans publier votre code** sous AGPL-3.0.
+  - type: input
+    id: organisation
+    attributes:
+      label: Organisation
+      description: Nom de l'entreprise ou de la structure (facultatif si vous préférez le donner en privé).
+    validations:
+      required: false
+  - type: dropdown
+    id: usage
+    attributes:
+      label: Type d'usage envisagé
+      options:
+        - Intégration dans un logiciel ou produit fermé
+        - Service en ligne modifié, sans publier le code
+        - Usage interne avec modifications non publiées
+        - Revente ou distribution en marque blanche
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description du projet
+      description: Quelques lignes sur ce que vous souhaitez faire (sans élément confidentiel).
+    validations:
+      required: true
+  - type: dropdown
+    id: recontact
+    attributes:
+      label: Comment souhaitez-vous être recontacté ?
+      options:
+        - Réponse dans ce ticket, puis échange privé
+        - Via le profil GitHub de mon organisation
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: Je n'ai indiqué aucune information confidentielle dans ce ticket public.
+          required: true

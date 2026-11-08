@@ -1,0 +1,22 @@
+{
+  "name": "Vidéo pas à pas",
+  "short_name": "Vidéo pas à pas",
+  "description": "Transforme une vidéo ou un audio en dossier de préparation (transcription + captures) pour une IA.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f5f2",
+  "theme_color": "#2f5d50",
+  "icons": [
+    {"src": "/static/icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "/static/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {"files": [{"name": "file", "accept": ["video/*", "audio/*"]}]}
+  }
+}

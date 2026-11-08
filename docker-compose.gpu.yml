@@ -1,0 +1,17 @@
+# Carte graphique NVIDIA :
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+services:
+  video-pas-a-pas:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: video-pas-a-pas:local-gpu
+    environment:
+      WHISPER_MODEL: large-v3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

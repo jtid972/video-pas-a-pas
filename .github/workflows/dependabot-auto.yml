@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Fusion automatique des mises à jour Dependabot MINEURES et CORRECTIVES, une fois les tests
+# passés (Linux, macOS, Windows, Docker). Les mises à jour MAJEURES restent à valider à la main.
+# Prérequis (voir docs/maintenance.md) : « Allow auto-merge » activé et règle de protection de
+# la branche main exigeant que les tests de la CI réussissent.
+name: Dependabot — fusion automatique
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+      - name: Activer la fusion automatique (après succès des tests)
+        if: steps.meta.outputs.update-type != 'version-update:semver-major'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
