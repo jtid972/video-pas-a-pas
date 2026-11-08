@@ -34,9 +34,12 @@ jobs:
           if gh issue list --repo "$REPO" --label maintenance --state open --search "Maintenance mensuelle $mois in:title" --json number --jq '.[0].number' | grep -q .; then
             echo "Ticket du mois déjà ouvert."; exit 0
           fi
-          release=$(gh release list --repo "$REPO" --limit 1 --json tagName,publishedAt --jq '.[0] | "\(.tagName) (\(.publishedAt[0:10]))"' 2>/dev/null || true)
-          runs=$(gh run list --repo "$REPO" --limit 12 --json name,conclusion,createdAt \
-                   --jq '.[] | "| \(.name) | \(.conclusion // "en cours") | \(.createdAt[0:10]) |"')
+          release=$(gh release list --repo "$REPO" --limit 1 --json tagName,publishedAt --jq '.[0] // empty | "\(.tagName) (\(.publishedAt[0:10]))"' 2>/dev/null || true)
+          # dernier résultat de chaque contrôle (hors rappels et fusion automatique)
+          runs=$(gh run list --repo "$REPO" --branch main --limit 40 --json workflowName,conclusion,status,createdAt \
+                   --jq 'map(select(.workflowName != "Rappel de maintenance" and .workflowName != "Dependabot — fusion automatique"))
+                         | unique_by(.workflowName) | .[]
+                         | "| \(.workflowName) | \(if .status != "completed" then "en cours" elif .conclusion == "success" then "✅ réussi" else "❌ \(.conclusion)" end) | \(.createdAt[0:10]) |"')
           prs=$(gh pr list --repo "$REPO" --author app/dependabot --state open --json number,title \
                   --jq '.[] | "- #\(.number) \(.title)"')
           cat > corps.md <<EOF
@@ -49,7 +52,7 @@ jobs:
           |---|---|---|
           $runs
 
-          ### Mises à jour Dependabot en attente (majeures, à valider)
+          ### Mises à jour Dependabot en attente (à valider ou en cours de test)
           ${prs:-Aucune.}
 
           ### À faire
