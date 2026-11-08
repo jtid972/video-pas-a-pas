@@ -3,16 +3,19 @@
 **Transforme une vidéo ou un enregistrement audio en dossier de préparation pour une IA.**
 
 Vidéo pas à pas est un petit outil web à installer sur sa machine (ou sur un serveur). On y
-dépose une vidéo (ou un simple fichier audio) et on récupère un **ZIP de préparation**
-contenant :
+dépose une vidéo (ou un simple fichier audio) et on récupère, au choix :
 
-- la **transcription** de ce qui est dit, horodatée (texte, sous-titres SRT, JSON) ;
-- des **captures d'écran** prises à chaque changement de plan et à intervalle régulier ;
-- un fichier `preparation.md` qui mélange texte et captures **dans l'ordre chronologique** ;
-- un `LISEZMOI.md` qui explique le contenu et une **consigne prête à coller** dans l'IA.
+- un **PDF unique** (par défaut) : consigne pour l'IA, captures et texte **dans l'ordre
+  chronologique**, puis la transcription complète en fin de document — un seul fichier à
+  donner à une IA en une fois, y compris celles qui n'acceptent pas les ZIP en pièce jointe
+  (ex. Copilot) ;
+- un **ZIP de préparation** (option avancée) avec les fichiers séparés : la **transcription**
+  horodatée (texte, sous-titres SRT, JSON), les **captures d'écran** (changements de plan +
+  intervalle régulier), un `preparation.md` et un `LISEZMOI.md`.
 
-Ce ZIP sert d'entrée à une IA capable de traiter **des images et/ou du texte** (par exemple
-Claude) pour produire un **tutoriel**, un **guide pas à pas** ou une **note de synthèse**.
+Dans les deux cas, le résultat sert d'entrée à une IA capable de traiter **des images et/ou du
+texte** (par exemple Claude) pour produire un **tutoriel**, un **guide pas à pas** ou une
+**note de synthèse**.
 
 > Fichier audio seul (MP3, M4A, WAV, OGG…) : seule la transcription est produite, sans
 > captures. Une pochette d'album intégrée au fichier est ignorée.
@@ -52,11 +55,13 @@ correspondant à son système (il crée l'environnement et ouvre le navigateur).
 ## Utilisation
 
 1. Glisser une vidéo ou un fichier audio dans la page.
-2. Choisir la langue et la précision de la transcription (« Équilibré » conseillé sans carte graphique).
+2. Choisir la langue, la précision de la transcription (« Équilibré » conseillé sans carte
+   graphique) et le format du résultat (PDF conseillé, ou ZIP pour un usage avancé).
 3. Suivre les barres de progression (envoi, puis traitement).
-4. Télécharger le ZIP et le donner à l'IA, avec la consigne fournie dans `CONSIGNE_IA.md`.
+4. Télécharger le résultat et le donner à l'IA (le PDF contient déjà la consigne ; pour le ZIP,
+   coller celle de `CONSIGNE_IA.md`).
 
-Le contenu du ZIP est détaillé dans [docs/sortie-zip.md](docs/sortie-zip.md).
+Le contenu du PDF et du ZIP est détaillé dans [docs/sortie-zip.md](docs/sortie-zip.md).
 
 ## Documentation
 

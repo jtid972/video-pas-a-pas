@@ -2,6 +2,12 @@
 
 Les versions de maintenance mensuelles (1.0.1, 1.0.2…) sont décrites dans les *Releases* GitHub.
 
+## Non publié
+
+- Le **PDF unique** devient le format de résultat par défaut (consigne, captures et texte dans
+  l'ordre chronologique, puis transcription complète) ; le **ZIP** reste disponible en option
+  avancée. Certaines IA (ex. Copilot) n'acceptaient pas le ZIP en pièce jointe.
+
 ## 1.0.0 — 2026-11-08
 
 Première version publique.

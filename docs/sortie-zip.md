@@ -1,8 +1,24 @@
-# Le ZIP de préparation
+# Le résultat : PDF (par défaut) ou ZIP
 
-Le résultat s'appelle `<nom du fichier>_preparation_IA.zip`. **C'est un dossier de préparation,
-pas un document fini** : il sert d'entrée à une IA qui traite du texte et/ou des images pour
-rédiger un tutoriel, un guide ou une note de synthèse.
+Dans les deux cas, **c'est un dossier de préparation, pas un document fini** : il sert d'entrée
+à une IA qui traite du texte et/ou des images pour rédiger un tutoriel, un guide ou une note de
+synthèse. Le format se choisit avant de lancer le traitement.
+
+## Le PDF unique (par défaut)
+
+Le résultat s'appelle `<nom du fichier>_preparation_IA.pdf`. Un seul fichier, à donner en une
+fois à l'IA — y compris celles qui n'acceptent pas les ZIP en pièce jointe (ex. Copilot) :
+
+1. **Page de garde** : résumé (durée, langue, nombre de passages/captures) et la **consigne
+   pour l'IA** (le même texte que `CONSIGNE_IA.md` du ZIP).
+2. **Contenu, dans l'ordre chronologique** : les captures (réencodées en JPEG, largeur max
+   1280 px, pour rester léger) et les passages transcrits, intercalés selon leur moment dans
+   la vidéo.
+3. **Transcription complète** : tous les passages avec leur horodatage, en fin de document —
+   pour que l'IA dispose aussi du texte brut, sans avoir à le reconstituer à partir des
+   extraits intercalés.
+
+## Le ZIP de préparation (option avancée)
 
 ```
 LISEZMOI.md            à quoi sert le ZIP, comment l'utiliser, résumé
@@ -42,8 +58,9 @@ images/                img_001_000m01s.jpg, img_002_000m08s.jpg…  (le nom cont
 
 | IA | Quoi lui donner |
 |---|---|
-| Lit le texte **et** les images (Claude, par exemple) | le ZIP entier, ou `preparation.md` + le dossier `images/` |
-| Lit seulement le texte | `transcription.txt` (ou `preparation.md`, les liens d'images seront ignorés) |
+| N'accepte pas les fichiers ZIP en pièce jointe (ex. Copilot) | le **PDF** |
+| Lit le texte **et** les images (Claude, par exemple) | le PDF, ou le ZIP entier (ou `preparation.md` + le dossier `images/`) |
+| Lit seulement le texte | `transcription.txt` du ZIP (ou `preparation.md`, les liens d'images seront ignorés) |
 
 ## Cas particuliers
 
