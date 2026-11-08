@@ -11,7 +11,7 @@ installer : les analyses tournent sur les serveurs de GitHub.
 | **Chaque lundi** 06:17 UTC (+ si dépendances ou Dockerfile changent) | `Trivy (hebdomadaire)` | analyse de sécurité **Trivy** des dépendances Python, du Dockerfile, des secrets oubliés et de l'image complète |
 | Chaque lundi 03:41 UTC, à chaque modification et à chaque version | `Image Docker` | reconstruit et publie les images sur `ghcr.io` (avec les derniers correctifs Debian) |
 | **Le 1er de chaque mois** 04:23 UTC | `Version mensuelle` | reconstruit l'image sans cache, **contrôle Trivy bloquant**, puis publie automatiquement une **version corrigée** (1.0.1, 1.0.2…) avec sa Release et ses images |
-| Sur chaque demande Dependabot | `Dependabot — fusion automatique` | fusionne seule les mises à jour mineures et correctives **une fois les tests réussis** ; les mises à jour majeures attendent votre validation |
+| Après chaque CI réussie sur une demande Dependabot | `Dependabot — fusion automatique` | fusionne seule les mises à jour mineures et correctives, **uniquement après la réussite de tous les tests** ; les mises à jour majeures attendent votre validation |
 | Chaque lundi | **Dependabot** | propose des demandes de fusion pour les nouvelles versions des dépendances Python, de l'image de base Python et des actions GitHub |
 
 ### Trivy
@@ -65,9 +65,8 @@ l'image est reconstruite avec les dernières mises à jour, analysée, et lancé
 - *Settings → Code security* : activer **Dependabot alerts** et **Dependabot security updates**.
 - *Settings → Actions → General* : *Workflow permissions* → **Read and write** (nécessaire
   pour publier l'image sur ghcr.io).
-- *Settings → General → Pull Requests* : cocher **Allow auto-merge**.
 - *Settings → Rules → Rulesets* (ou *Branches*) : créer une règle sur `main` qui **exige la
-  réussite des tests** : `Linux (avec vraie transcription)`, `macos-latest`, `windows-latest`,
+  réussite des tests** (protection supplémentaire : la fusion automatique attend déjà la fin de la CI) : `Linux (avec vraie transcription)`, `macos-latest`, `windows-latest`,
   `Construction de l'image Docker`. Sans cette règle, la fusion automatique n'attendrait pas les tests.
 - Après la première publication : rendre public le paquet `video-pas-a-pas` (onglet *Packages*)
   si Scaleway doit le lire directement.

@@ -17,3 +17,4 @@ ignore = ["B008", "E501"]  # E501 : textes longs ; B008 : File(...) / Form(...) 
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
