@@ -1,7 +1,7 @@
 # Vidéo pas à pas — variante carte graphique NVIDIA (CUDA 12 + cuDNN 9, requis par faster-whisper >= 1.1)
 # Copyright (c) 2026 Johan TIDAS — AGPL-3.0-or-later
 # Non testée en intégration continue (pas de GPU sur les runners GitHub).
-FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+FROM nvidia/cuda:12.9.2-cudnn-runtime-ubuntu22.04
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ffmpeg python3 python3-pip \
