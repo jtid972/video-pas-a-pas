@@ -14,6 +14,15 @@ installer : les analyses tournent sur les serveurs de GitHub.
 | Après chaque CI réussie sur une demande Dependabot | `Dependabot — fusion automatique` | fusionne seule les mises à jour mineures et correctives, **uniquement après la réussite de tous les tests** ; les mises à jour majeures attendent votre validation |
 | Chaque lundi | **Dependabot** | propose des demandes de fusion pour les nouvelles versions des dépendances Python, de l'image de base Python et des actions GitHub |
 
+### Rappels par ticket (et e-mail)
+
+Le workflow `Rappel de maintenance` ouvre un ticket GitHub — et GitHub envoie un e-mail :
+- **le 1er de chaque mois** : ticket « Maintenance mensuelle » (état des contrôles, mises à jour en attente, liste de contrôle) ;
+- **dès qu'un contrôle de sécurité échoue** (Trivy, publication d'image, version mensuelle) : ticket
+  « Blocage sécurité », complété à chaque nouvel échec jusqu'à sa fermeture.
+
+Pour recevoir ces e-mails : *Watch* → *All Activity* (ou au moins *Issues*) sur le dépôt.
+
 ### Trivy
 
 - Les résultats détaillés arrivent dans l'onglet **Security → Code scanning** du dépôt.
