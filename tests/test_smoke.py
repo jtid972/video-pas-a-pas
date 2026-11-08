@@ -51,7 +51,7 @@ def run_job(path, **form):
         if j["status"] in ("done", "error"):
             break
         time.sleep(0.5)
-    assert j["status"] == "done", j
+    assert j["status"] == "done", j.get("message")
     z = client.get(f"/api/jobs/{jid}/download")
     assert z.status_code == 200
     return j, zipfile.ZipFile(io.BytesIO(z.content))
@@ -59,6 +59,13 @@ def run_job(path, **form):
 
 def images(zf):
     return sorted(n for n in zf.namelist() if n.startswith("images/"))
+
+
+def test_lecture_wav(tmp_path):
+    wav = tmp_path / "t.wav"
+    ffmpeg("-f", "lavfi", "-i", "sine=f=440:d=1", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(wav))
+    a = main.load_wav(wav)
+    assert a.dtype.name == "float32" and len(a) == 16000 and 0.05 < abs(a).max() <= 1.0
 
 
 def test_config():
@@ -133,4 +140,4 @@ def test_partage_depuis_telephone(media):
         if j["status"] in ("done", "error"):
             break
         time.sleep(0.5)
-    assert j["status"] == "done", j
+    assert j["status"] == "done", j.get("message")
