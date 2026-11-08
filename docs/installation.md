@@ -118,7 +118,8 @@ Variables d'environnement (dans `docker-compose.yml`, ou avant de lancer le scri
 | `FRAME_MIN_GAP` | `4` | écart minimal entre deux captures (secondes) |
 | `MAX_FRAMES` | `300` | nombre maximal de captures |
 | `MAX_UPLOAD_MB` | `4096` | taille maximale d'un fichier envoyé |
-| `KEEP_HOURS` | `48` | les ZIP sont supprimés après ce délai |
+| `ENABLE_YOUTUBE` | `1` | `0` désactive la récupération par adresse YouTube (champ masqué dans la page) ; utile sur un déploiement cloud public, où YouTube bloque souvent ces adresses |
+| `KEEP_HOURS` | `48` | les PDF/ZIP sont supprimés après ce délai |
 | `APP_PASSWORD` | *(vide)* | mot de passe d'accès ; vide = pas de mot de passe |
 | `SOURCE_URL` | adresse du dépôt | lien « Code source » du pied de page (obligation de l'AGPL) ; à faire pointer vers votre version si vous la modifiez |
 | `DATA_DIR` / `MODELS_DIR` | `./data` / `./data/models` | dossiers de travail et des modèles |

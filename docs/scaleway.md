@@ -25,6 +25,9 @@ Conséquences pour Vidéo pas à pas :
   seconde, ce qui maintient l'instance active.
 - Pour de très longues vidéos (plus d'une heure de traitement), préférer un poste de travail
   (voir la piste « Serverless Jobs » dans la [feuille de route](feuille-de-route.md)).
+- **Récupération par adresse YouTube** : à désactiver ici (`ENABLE_YOUTUBE=0`), YouTube bloquant
+  souvent les adresses IP des hébergeurs cloud (demandes de connexion, captchas). Elle marche
+  bien mieux sur un poste de travail.
 
 ## 1. Disposer de l'image
 
@@ -66,6 +69,7 @@ docker build --platform linux/amd64 --build-arg PRELOAD_MODEL=small \
 | Stockage éphémère | au moins 2 à 3 fois la taille des vidéos traitées |
 | Variable d'environnement | `WHISPER_MODEL=small` |
 | Variable d'environnement | `SOURCE_URL=https://github.com/<compte>/video-pas-a-pas` (lien « Code source » exigé par l'AGPL) |
+| Variable d'environnement | `ENABLE_YOUTUBE=0` (YouTube bloque souvent les adresses IP de Scaleway ; voir plus bas) |
 | **Secret** | `APP_PASSWORD` = un mot de passe solide |
 | Health check (HTTP) | chemin `/healthz` |
 

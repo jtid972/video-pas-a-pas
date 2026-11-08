@@ -3,6 +3,8 @@
 # Code réalisé avec l'assistance de Claude (IA d'Anthropic) pour la génération de code.
 """Vidéo pas à pas : prépare une vidéo (ou un fichier audio) pour une IA.
 
+Entrée : un fichier déposé, ou (si activé) l'adresse d'une vidéo YouTube.
+
 Produit, au choix :
   - un **PDF unique** (par défaut) : consigne + captures et transcript dans l'ordre
     chronologique + transcription complète en fin de document — un seul fichier à donner
@@ -52,6 +54,10 @@ PASSWORD = os.environ.get("APP_PASSWORD", "")              # vide = pas de mot d
 # Si vous modifiez le programme, faites pointer cette adresse vers VOTRE version modifiée.
 SOURCE_URL = os.environ.get("SOURCE_URL", "https://github.com/jtid972/video-pas-a-pas")
 MODELS = ["tiny", "base", "small", "medium", "large-v3"]
+# Désactivable (ex. déploiement cloud public) : YouTube bloque souvent les adresses IP des
+# hébergeurs, et le téléchargement n'est permis que pour ses propres vidéos, des vidéos sous
+# licence libre, ou avec l'accord du titulaire des droits (voir docs/feuille-de-route.md).
+ENABLE_YOUTUBE = os.environ.get("ENABLE_YOUTUBE", "1").strip().lower() not in ("0", "false", "non", "no")
 
 app = FastAPI(title=APP_NAME, version=__version__)
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
@@ -206,6 +212,104 @@ def extract_frames(jid, src, times, img_dir):
             frames.append({"time": round(t, 2), "file": f"images/{name}"})
         upd(jid, progress=round((i + 1) / len(times) * 100, 1))
     return frames
+
+
+# ---------------------------------------------------------------- YouTube (option désactivable)
+YOUTUBE_URL_RE = re.compile(
+    r"^(https?://)?(www\.|m\.|music\.)?youtube\.com/(watch\?|shorts/)|^(https?://)?youtu\.be/", re.I)
+_VTT_TIME_RE = re.compile(r"(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3})")
+
+
+def validate_youtube_url(url: str) -> str:
+    url = (url or "").strip()
+    if not url or not YOUTUBE_URL_RE.match(url):
+        raise HTTPException(400, "Adresse non reconnue : seule l'adresse d'une vidéo youtube.com "
+                                 "(/watch, /shorts) ou youtu.be est acceptée.")
+    return url if re.match(r"^https?://", url, re.I) else "https://" + url
+
+
+def _vtt_time(s: str) -> float:
+    m = _VTT_TIME_RE.match(s.strip())
+    if not m:
+        return 0.0
+    h = int(m.group(1)) if m.group(1) else 0
+    return h * 3600 + int(m.group(2)) * 60 + int(m.group(3)) + int(m.group(4)) / 1000
+
+
+def vtt_to_segs(text: str) -> list:
+    """Sous-titres WebVTT (YouTube) → segments {start, end, text}, comme la transcription Whisper.
+    Approximatif pour les sous-titres automatiques (texte défilant) : une cue identique, une fois
+    nettoyée des balises, à la précédente est ignorée plutôt que répétée."""
+    segs, prev = [], None
+    for block in re.split(r"\r?\n\r?\n+", text.strip()):
+        lines = block.splitlines()
+        i = next((i for i, line in enumerate(lines) if "-->" in line), None)
+        if i is None:
+            continue
+        start_s, _, end_s = lines[i].partition("-->")
+        start, end = _vtt_time(start_s), _vtt_time(end_s.strip().split(" ", 1)[0])
+        clean = re.sub(r"<[^>]+>", "", " ".join(lines[i + 1:]))
+        clean = re.sub(r"\s+", " ", clean).strip()
+        if not clean or clean == prev:
+            continue
+        segs.append({"start": round(start, 2), "end": round(end, 2), "text": clean})
+        prev = clean
+    return segs
+
+
+def fetch_youtube(jid: str, d: Path, url: str, language: str | None):
+    """Télécharge une vidéo YouTube avec yt-dlp. L'extracteur est restreint à YouTube
+    (`allowed_extractors`) : une adresse détournée vers un autre site ne peut donc pas faire
+    interroger une autre machine (défense en profondeur, en plus de `validate_youtube_url`).
+    Renvoie (fichier vidéo, segments de sous-titres ou None, langue des sous-titres, titre)."""
+    import yt_dlp
+
+    upd(jid, stage="Préparation du téléchargement", progress=0)
+    common = {"noplaylist": True, "allowed_extractors": ["youtube"], "quiet": True,
+             "no_warnings": True, "socket_timeout": 30}
+    try:
+        with yt_dlp.YoutubeDL({**common, "skip_download": True}) as probe_dl:
+            info = probe_dl.extract_info(url, download=False)
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(f"Vidéo YouTube inaccessible : {e}") from e
+
+    title = info.get("title") or "video_youtube"
+    manual, auto = info.get("subtitles") or {}, info.get("automatic_captions") or {}
+    prefer = ([language] if language else []) + ["fr", "en"]
+    sub_lang = (next((lg for lg in prefer if lg in manual), None)
+               or next((lg for lg in prefer if lg in auto), None))
+
+    def hook(st):
+        if st.get("status") == "downloading" and st.get("total_bytes"):
+            upd(jid, stage="Téléchargement de la vidéo",
+               progress=round(st.get("downloaded_bytes", 0) / st["total_bytes"] * 100, 1))
+
+    opts = {**common, "outtmpl": str(d / "source.%(ext)s"),
+           "format": "bv*[height<=1080]+ba/b[height<=1080]/best",
+           "merge_output_format": "mp4", "progress_hooks": [hook]}
+    if sub_lang:
+        opts.update(writesubtitles=sub_lang in manual, writeautomaticsub=sub_lang in auto,
+                   subtitleslangs=[sub_lang], subtitlesformat="vtt")
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.download([url])
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(
+            f"Téléchargement YouTube impossible ({e}). Depuis un serveur cloud, YouTube bloque "
+            "parfois ces adresses (voir docs/feuille-de-route.md) : réessayez depuis un poste "
+            "de travail.") from e
+
+    src = next((p for p in sorted(d.glob("source.*")) if p.suffix not in (".vtt", ".part")), None)
+    if not src:
+        raise RuntimeError("Téléchargement YouTube : fichier vidéo introuvable après coup.")
+
+    segs = None
+    if sub_lang:
+        vtt = next(iter(d.glob(f"source.{sub_lang}*.vtt")), None)
+        if vtt:
+            segs = vtt_to_segs(vtt.read_text(encoding="utf-8", errors="replace")) or None
+            vtt.unlink(missing_ok=True)
+    return src, segs, sub_lang, title
 
 
 LISEZMOI = """# Dossier de préparation — {app}
@@ -390,10 +494,17 @@ def build_pdf(pdf_path: Path, out: Path, title: str, meta: dict, segs: list, fra
 def process(jid: str):
     j = jobs[jid]
     d = JOBS / jid
-    src = d / j["source"]
     out = d / "resultat"
     img_dir = out / "images"
     img_dir.mkdir(parents=True, exist_ok=True)
+
+    sub_segs, sub_lang = None, None
+    if j.get("mode") == "youtube":
+        src, sub_segs, sub_lang, title = fetch_youtube(jid, d, j["url"], j.get("language"))
+        j["filename"] = title
+        upd(jid, filename=title)
+    else:
+        src = d / j["source"]
 
     info = probe(src)
     if not info["audio"] and not info["video"]:
@@ -403,7 +514,9 @@ def process(jid: str):
             "duration": dur, "model": None, "language": None}
     segs, frames = [], []
 
-    if j["transcribe"]:
+    if sub_segs is not None:
+        segs, meta["model"], meta["language"] = sub_segs, "sous-titres YouTube", sub_lang
+    elif j["transcribe"]:
         if info["audio"]:
             upd(jid, stage="Extraction de l'audio", progress=0)
             wav = d / "audio.wav"
@@ -475,7 +588,7 @@ def healthz():
 def config():
     return {"name": APP_NAME, "version": __version__, "models": MODELS,
             "default_model": DEFAULT_MODEL, "max_upload_mb": MAX_UPLOAD_MB,
-            "source_url": SOURCE_URL, "license": "AGPL-3.0-or-later"}
+            "source_url": SOURCE_URL, "license": "AGPL-3.0-or-later", "enable_youtube": ENABLE_YOUTUBE}
 
 
 async def save_upload(file: UploadFile) -> tuple[str, str]:
@@ -523,6 +636,29 @@ async def create_job(file: UploadFile = File(...), language: str = Form(""),
         raise HTTPException(400, "Modèle inconnu")
     jid, source = await save_upload(file)
     return start_job(jid, source, file.filename, language, model, transcribe_audio, images, output_format)
+
+
+@app.post("/api/jobs-from-url")
+def create_job_from_url(url: str = Form(...), language: str = Form(""),
+                        model: str = Form(DEFAULT_MODEL), transcribe_audio: bool = Form(True),
+                        images: bool = Form(True), output_format: str = Form("pdf")):
+    if not ENABLE_YOUTUBE:
+        raise HTTPException(404, "Le téléchargement depuis une adresse est désactivé sur ce serveur.")
+    if model not in MODELS:
+        raise HTTPException(400, "Modèle inconnu")
+    if output_format not in OUTPUT_FORMATS:
+        raise HTTPException(400, "Format de sortie inconnu")
+    url = validate_youtube_url(url)
+    jid = uuid.uuid4().hex[:12]
+    (JOBS / jid).mkdir()
+    with jobs_lock:
+        jobs[jid] = {"id": jid, "filename": "(vidéo YouTube)", "source": None, "mode": "youtube",
+                     "url": url, "language": (language or "").strip() or None, "model": model,
+                     "transcribe": transcribe_audio, "images": images, "format": output_format,
+                     "status": "queued", "stage": "En attente", "progress": 0}
+    upd(jid)
+    work_queue.put(jid)
+    return {"id": jid}
 
 
 # Partage depuis un téléphone (application installée) : « Partager » → Vidéo pas à pas.
@@ -576,8 +712,8 @@ def download(jid: str):
     if not p.exists():
         raise HTTPException(404, "Résultat pas encore prêt")
     ext, mt = ("zip", "application/zip") if is_zip else ("pdf", "application/pdf")
-    name = Path(j["filename"]).stem + f"_preparation_IA.{ext}"
-    return FileResponse(p, filename=name, media_type=mt)
+    safe = re.sub(r'[\\/:*?"<>|]+', "_", Path(j["filename"]).stem).strip() or "preparation"
+    return FileResponse(p, filename=f"{safe}_preparation_IA.{ext}", media_type=mt)
 
 
 # ---------------------------------------------------------------- application installable (PWA)

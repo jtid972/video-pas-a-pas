@@ -3,7 +3,9 @@
 **Transforme une vidéo ou un enregistrement audio en dossier de préparation pour une IA.**
 
 Vidéo pas à pas est un petit outil web à installer sur sa machine (ou sur un serveur). On y
-dépose une vidéo (ou un simple fichier audio) et on récupère, au choix :
+dépose une vidéo (ou un simple fichier audio) — ou on colle l'**adresse d'une vidéo YouTube**
+(réservé à ses propres vidéos, à celles sous licence libre ou avec une autorisation ; voir
+[docs/feuille-de-route.md](docs/feuille-de-route.md)) — et on récupère, au choix :
 
 - un **PDF unique** (par défaut) : consigne pour l'IA, captures et texte **dans l'ordre
   chronologique**, puis la transcription complète en fin de document — un seul fichier à
@@ -54,7 +56,7 @@ correspondant à son système (il crée l'environnement et ouvre le navigateur).
 
 ## Utilisation
 
-1. Glisser une vidéo ou un fichier audio dans la page.
+1. Glisser une vidéo ou un fichier audio dans la page, ou coller une adresse YouTube.
 2. Choisir la langue, la précision de la transcription (« Équilibré » conseillé sans carte
    graphique) et le format du résultat (PDF conseillé, ou ZIP pour un usage avancé).
 3. Suivre les barres de progression (envoi, puis traitement).

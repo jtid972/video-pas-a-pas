@@ -7,6 +7,9 @@ Les versions de maintenance mensuelles (1.0.1, 1.0.2…) sont décrites dans les
 - Le **PDF unique** devient le format de résultat par défaut (consigne, captures et texte dans
   l'ordre chronologique, puis transcription complète) ; le **ZIP** reste disponible en option
   avancée. Certaines IA (ex. Copilot) n'acceptaient pas le ZIP en pièce jointe.
+- **Récupération d'une vidéo par adresse YouTube** (onglet dédié, désactivable avec
+  `ENABLE_YOUTUBE=0`), avec raccourci automatique sur les sous-titres existants pour éviter la
+  transcription Whisper quand c'est possible.
 
 ## 1.0.0 — 2026-11-08
 

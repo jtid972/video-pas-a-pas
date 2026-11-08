@@ -5,3 +5,4 @@ python-multipart==0.0.32
 faster-whisper==1.2.1
 reportlab==5.1.0     # génération du PDF unique (format de sortie par défaut)
 pillow==13.0.0        # redimensionnement/réencodage des captures avant insertion dans le PDF
+yt-dlp==2026.10.26     # récupération d'une vidéo YouTube par adresse (désactivable : ENABLE_YOUTUBE=0)

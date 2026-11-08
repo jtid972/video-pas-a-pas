@@ -176,3 +176,78 @@ def test_partage_depuis_telephone(media):
             break
         time.sleep(0.5)
     assert j["status"] == "done", j.get("message")
+
+
+# ---------------------------------------------------------------- YouTube (sans réseau réel)
+@pytest.mark.parametrize("url,ok", [
+    ("https://www.youtube.com/watch?v=dQw4w9WgXcQ", True),
+    ("https://youtu.be/dQw4w9WgXcQ", True),
+    ("youtube.com/watch?v=dQw4w9WgXcQ", True),           # sans schéma : accepté, complété
+    ("https://www.youtube.com/playlist?list=PL123", False),  # pas une vidéo seule
+    ("https://vimeo.com/12345", False),
+    ("https://example.com/youtube.com", False),           # ne doit pas se laisser tromper
+])
+def test_validation_adresse_youtube(url, ok):
+    if ok:
+        assert main.validate_youtube_url(url).startswith("https://")
+    else:
+        with pytest.raises(Exception):  # noqa: B017 — HTTPException de FastAPI
+            main.validate_youtube_url(url)
+
+
+def test_vtt_vers_segments():
+    vtt = """WEBVTT
+Kind: captions
+Language: fr
+
+00:00:01.000 --> 00:00:04.000
+Bonjour, on va <c>installer</c> l'imprimante.
+
+00:00:01.000 --> 00:00:04.000
+Bonjour, on va installer l'imprimante.
+
+00:00:04.500 --> 00:00:07.200 align:start position:0%
+<00:00:04.560><c>Ouvrez</c> les paramètres.
+"""
+    segs = main.vtt_to_segs(vtt)
+    assert [s["text"] for s in segs] == ["Bonjour, on va installer l'imprimante.",
+                                         "Ouvrez les paramètres."]
+    assert segs[0]["start"] == 1.0 and segs[0]["end"] == 4.0
+
+
+def test_youtube_desactivable(monkeypatch):
+    monkeypatch.setattr(main, "ENABLE_YOUTUBE", False)
+    assert client.get("/api/config").json()["enable_youtube"] is False
+    r = client.post("/api/jobs-from-url", data={"url": "https://youtu.be/dQw4w9WgXcQ"})
+    assert r.status_code == 404
+
+
+def test_youtube_sous_titres_sans_whisper(monkeypatch):
+    """La vidéo est « téléchargée » (fonction remplacée par un test local) et ses sous-titres
+    servent directement de transcription : pas d'appel à Whisper."""
+    monkeypatch.setattr(main, "ENABLE_YOUTUBE", True)
+
+    def fake_fetch_youtube(jid, d, url, language):
+        src = d / "source.mp4"
+        subprocess.run(["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi",
+                        "-i", "color=c=green:d=2:s=320x240", "-f", "lavfi", "-i", "sine=f=440:d=2",
+                        "-shortest", str(src)], check=True)
+        segs = [{"start": 0.0, "end": 1.0, "text": "Bonjour."}]
+        return src, segs, "fr", "ma vidéo youtube"
+
+    monkeypatch.setattr(main, "fetch_youtube", fake_fetch_youtube)
+    monkeypatch.setattr(main, "transcribe", lambda *a, **k: pytest.fail("Whisper ne doit pas être appelé"))
+
+    r = client.post("/api/jobs-from-url", data={"url": "https://youtu.be/dQw4w9WgXcQ",
+                                                "transcribe_audio": "true", "images": "false"})
+    assert r.status_code == 200, r.text
+    jid = r.json()["id"]
+    for _ in range(120):
+        j = client.get(f"/api/jobs/{jid}").json()
+        if j["status"] in ("done", "error"):
+            break
+        time.sleep(0.5)
+    assert j["status"] == "done", j.get("message")
+    assert j["filename"] == "ma vidéo youtube"
+    rep = client.get(f"/api/jobs/{jid}/download")
+    assert rep.headers["content-type"] == "application/pdf"

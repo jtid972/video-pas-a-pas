@@ -37,6 +37,12 @@
   .checks { display:flex; gap:12px 20px; margin:8px 0 20px; flex-wrap:wrap; }
   .checks input { width:20px; height:20px; accent-color:var(--accent); }
   .checks label { color:var(--ink); font-size:.95rem; display:flex; gap:6px; align-items:center; }
+  .tabs { display:flex; gap:8px; margin-bottom:14px; }
+  .tabs button { flex:1; padding:10px; border:1px solid var(--line); border-radius:8px; background:transparent;
+         color:var(--muted); font:inherit; font-weight:600; cursor:pointer; min-height:44px; }
+  .tabs button.active { background:var(--soft); color:var(--accent); border-color:var(--accent); }
+  #ytUrl { width:100%; margin-top:4px; padding:10px; border:1px solid var(--line); border-radius:8px;
+          font:inherit; background:var(--field); color:var(--ink); min-height:44px; }
   button, a.btn { display:inline-flex; align-items:center; justify-content:center; background:var(--accent); color:var(--accent-ink); border:0; border-radius:10px;
           padding:12px 18px; min-height:46px; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; }
   button:disabled { opacity:.45; cursor:default; }
@@ -68,10 +74,24 @@
   <p id="iosHint" class="note hidden">Pour installer l'application sur iPhone ou iPad : bouton <strong>Partager</strong> puis <strong>Sur l'écran d'accueil</strong>.</p>
 
   <div class="card">
+    <div class="tabs" id="srcTabs">
+      <button type="button" class="tab active" data-mode="file">Fichier</button>
+      <button type="button" class="tab hidden" data-mode="url" id="tabUrl">Adresse YouTube</button>
+    </div>
+
     <div id="drop">
       <strong id="fname">Glisse une vidéo ou un fichier audio ici</strong>
       ou clique pour choisir (MP4, MOV, MKV, WEBM, MP3, M4A, WAV, OGG…)
       <input type="file" id="file" accept="video/*,audio/*" hidden>
+    </div>
+
+    <div id="ytBox" class="hidden">
+      <label for="ytUrl">Adresse de la vidéo YouTube</label>
+      <input type="url" id="ytUrl" placeholder="https://www.youtube.com/watch?v=…">
+      <small class="hint">Réservé à vos propres vidéos, à celles sous licence libre (Creative
+        Commons) ou pour lesquelles vous avez une autorisation : les conditions d'utilisation de
+        YouTube n'autorisent le téléchargement que dans ces cas. Peut échouer si l'application
+        tourne chez un hébergeur cloud (YouTube bloque parfois ces adresses).</small>
     </div>
 
     <div class="row">
@@ -169,9 +189,24 @@ fetch("/api/config").then(r => r.json()).then(c => {
     if (m === c.default_model) o.selected = true;
     $("model").add(o);
   }
+  if (c.enable_youtube) $("tabUrl").classList.remove("hidden");
 });
 
-function pick(f) { if (!f) return; sharedId = null; file = f; $("fname").textContent = f.name + " (" + (f.size/1048576).toFixed(1) + " Mo)"; $("go").disabled = false; }
+// ---------- choix de la source : fichier, ou (si activé) adresse YouTube
+function srcMode() { return document.querySelector("#srcTabs .tab.active").dataset.mode; }
+function updateGo() {
+  $("go").disabled = srcMode() === "url" ? !$("ytUrl").value.trim() : !(file || sharedId);
+}
+document.querySelectorAll("#srcTabs .tab").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#srcTabs .tab").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  $("drop").classList.toggle("hidden", b.dataset.mode !== "file");
+  $("ytBox").classList.toggle("hidden", b.dataset.mode !== "url");
+  updateGo();
+});
+$("ytUrl").oninput = updateGo;
+
+function pick(f) { if (!f) return; sharedId = null; file = f; $("fname").textContent = f.name + " (" + (f.size/1048576).toFixed(1) + " Mo)"; updateGo(); }
 $("drop").onclick = () => $("file").click();
 $("file").onchange = e => pick(e.target.files[0]);
 ["dragenter","dragover"].forEach(ev => $("drop").addEventListener(ev, e => { e.preventDefault(); $("drop").classList.add("over"); }));
@@ -182,6 +217,24 @@ function setBar(bar, pct, pctEl) { $(bar).style.width = pct + "%"; $(pctEl).text
 function msg(t, err) { $("msg").className = err ? "err" : ""; $("msg").innerHTML = t; }
 
 $("go").onclick = () => {
+  if (srcMode() === "url") {
+    const url = $("ytUrl").value.trim();
+    if (!url) return;
+    $("go").disabled = true; msg("");
+    $("upStep").classList.add("hidden"); $("jobStep").classList.add("hidden");
+    const fd = new FormData();
+    fd.append("url", url);
+    fd.append("language", $("lang").value);
+    fd.append("model", $("model").value);
+    fd.append("transcribe_audio", $("tr").checked);
+    fd.append("images", $("img").checked);
+    fd.append("output_format", $("fmt").value);
+    fetch("/api/jobs-from-url", { method: "POST", body: fd })
+      .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)))
+      .then(d => poll(d.id))
+      .catch(e => { msg("Échec : " + e, true); $("go").disabled = false; });
+    return;
+  }
   if (!file && !sharedId) return;
   $("go").disabled = true; msg("");
   $("upStep").classList.remove("hidden"); $("jobStep").classList.add("hidden");

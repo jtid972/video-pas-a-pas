@@ -1,25 +1,24 @@
 # Feuille de route
 
-## v1.1 — Récupérer une vidéo YouTube (prévu)
+## Récupérer une vidéo YouTube — fait (08/11/2026)
 
-Objectif : coller l'adresse d'une vidéo au lieu d'envoyer un fichier.
+Un champ « Adresse YouTube » (onglet à côté de « Fichier »), désactivable avec
+`ENABLE_YOUTUBE=0`. Implémenté avec [yt-dlp](https://github.com/yt-dlp/yt-dlp) (licence
+Unlicense, compatible), restreint à l'extracteur YouTube (`allowed_extractors`) pour qu'une
+adresse détournée ne puisse pas faire interroger un autre site.
 
-Piste technique :
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp) (licence Unlicense, compatible) : un champ
-  « Adresse de la vidéo » dans la page, et une étape « Téléchargement » avec sa propre barre de progression.
-- **Raccourci intéressant** : beaucoup de vidéos ont déjà des sous-titres (manuels ou
-  automatiques). Les récupérer directement évite la transcription Whisper : c'est beaucoup
-  plus rapide. Whisper resterait le plan B quand il n'y a pas de sous-titres.
-- yt-dlp change souvent pour suivre YouTube : il faudra l'ajouter à `requirements.txt`.
-  Dependabot proposera alors ses nouvelles versions chaque semaine.
-
-Points d'attention :
-- **Conditions d'utilisation** : celles de YouTube n'autorisent le téléchargement que si
-  YouTube le propose ou avec l'accord du titulaire des droits. À réserver à vos propres vidéos,
-  aux vidéos sous licence libre (Creative Commons) ou à celles pour lesquelles vous avez une autorisation.
-  Le rappeler dans l'interface.
+- **Raccourci sous-titres** : quand la vidéo a des sous-titres (manuels ou automatiques), ils
+  sont récupérés directement (`vtt_to_segs`) et servent de transcription — Whisper n'est pas
+  appelé, c'est beaucoup plus rapide. Whisper reste le plan B sinon.
+- yt-dlp change souvent pour suivre YouTube : sa version est dans `requirements.txt`,
+  Dependabot proposera ses mises à jour chaque semaine.
+- **Conditions d'utilisation** : rappelées dans l'interface, à côté du champ — réservé à ses
+  propres vidéos, aux vidéos sous licence libre (Creative Commons) ou à celles pour lesquelles
+  on a une autorisation.
 - **Serveurs cloud** : YouTube bloque souvent les adresses IP des hébergeurs (dont Scaleway),
-  avec des demandes de connexion ou des captchas. La fonction marchera bien mieux sur un poste de travail.
+  avec des demandes de connexion ou des captchas — désactiver la fonction (`ENABLE_YOUTUBE=0`)
+  sur ce type de déploiement (voir [docs/scaleway.md](scaleway.md)) ; elle marche bien mieux sur
+  un poste de travail.
 
 ## Pistes ultérieures
 

@@ -81,6 +81,7 @@ compatibles avec l'AGPL-3.0.
 | [python-multipart](https://github.com/Kludex/python-multipart) | réception des fichiers | Apache-2.0 |
 | [ReportLab](https://www.reportlab.com/opensource/) | génération du PDF unique (format par défaut) | BSD-3-Clause |
 | [Pillow](https://python-pillow.github.io/) | redimensionnement/réencodage des captures avant insertion dans le PDF | MIT-CMU (HPND) |
+| [yt-dlp](https://github.com/yt-dlp/yt-dlp) | récupération d'une vidéo YouTube par adresse (désactivable) | Unlicense |
 
 **Images Docker** : elles contiennent Debian (ou Ubuntu pour la variante GPU), Python et le
 paquet `ffmpeg` de la distribution, sous licence GPL. Leur code source correspondant est
