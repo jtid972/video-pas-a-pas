@@ -51,7 +51,7 @@ def run_job(path, **form):
         if j["status"] in ("done", "error"):
             break
         time.sleep(0.5)
-    assert j["status"] == "done", j
+    assert j["status"] == "done", j.get("message")
     z = client.get(f"/api/jobs/{jid}/download")
     assert z.status_code == 200
     return j, zipfile.ZipFile(io.BytesIO(z.content))
@@ -133,4 +133,4 @@ def test_partage_depuis_telephone(media):
         if j["status"] in ("done", "error"):
             break
         time.sleep(0.5)
-    assert j["status"] == "done", j
+    assert j["status"] == "done", j.get("message")
