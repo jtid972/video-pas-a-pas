@@ -11,8 +11,9 @@ services:
     environment:
       MODELS_DIR: /data/models   # garde les modèles entre deux redémarrages
       WHISPER_MODEL: small       # tiny | base | small | medium | large-v3
-      SCENE_THRESHOLD: "0.3"     # 0.2 = plus de captures, 0.4 = moins
-      FRAME_INTERVAL: "30"       # au moins une capture toutes les 30 s
+      SCENE_THRESHOLD: "0.10"    # 0.2 = plus de captures, 0.4 = moins
+      FRAME_INTERVAL: "3"        # au moins une capture toutes les 3 s
+      FRAME_MIN_GAP: "2"         # écart minimal entre deux captures (défaut 4 s)
       KEEP_HOURS: "48"           # résultats supprimés après 48 h
       # APP_PASSWORD: "change-moi"   # à activer si l'outil est ouvert au réseau
     restart: unless-stopped
