@@ -344,46 +344,60 @@ Résumé : durée {duree}, {n_segs} passage(s) transcrit(s), {n_images} capture(
 
 CONSIGNE = """Consigne pour l'IA
 
-Tu reçois une préparation produite par « {app} » à partir d'une vidéo ou d'un enregistrement audio.
-Ce dossier contient :
-- Une transcription horodatée (texte avec horodatages)
-- Des captures d'écran classées dans l'ordre chronologique (si source vidéo)
+Tu reçois une préparation produite par « {app} » à partir d'une vidéo ou d'un enregistrement
+audio : une transcription horodatée (s'il y en a) et des captures d'écran classées dans l'ordre
+chronologique.
 
-Format reçu :
-- PDF : ce document (consigne + captures/texte intercalés chronologiquement + transcription complète en fin de document)
-- ZIP : voir preparation.md et CONSIGNE_IA.md
+Choisis UN SEUL des trois documents ci-dessous à produire, selon la demande qui t'a été faite
+(tutoriel, guide utilisateur ou note de synthèse). Ne mélange pas les styles.
 
-À PARTIR DE CE CONTENU, REDIGE :
-=== REMPLACER PAR : un tutoriel pas à pas | un guide technique | une note de synthèse ===
-DESTINE A :
-=== REMPLACER PAR : débutants | utilisateurs avancés | experts | [autre public] ===
+=== CHOIX DU DOCUMENT À PRODUIRE : tutoriel pas à pas | guide utilisateur | note de synthèse ===
+=== PUBLIC VISÉ : ex. débutants, agents d'une collectivité, utilisateurs avancés... ===
 
---- INSTRUCTIONS DETAILLEES ---
+RÈGLES COMMUNES AUX TROIS DOCUMENTS (non négociables) :
+- Reformule entièrement les propos oraux ou les actions observées ; ne copie jamais une phrase
+  de la transcription telle quelle.
+- Ne fusionne jamais deux actions distinctes en une seule étape pour compenser un manque de
+  capture : une étape peut exister sans image, le texte seul suffit alors.
+- Si tu utilises une capture, décris-la par une légende courte et descriptive de ce qu'elle
+  montre (exemple : "Capture : fenêtre de connexion Outlook"). N'écris JAMAIS le nom de
+  fichier de l'image (exemple : capture_000m25s.jpg) dans le document final : ce nom ne sert qu'à
+  toi, en interne, pour retrouver la bonne image.
+- Français rigoureusement correct : zéro faute d'orthographe ou de grammaire. La transcription
+  source peut contenir des imprécisions, notamment si elle a été produite par un petit modèle de
+  reconnaissance vocale ("small") ; corrige-les silencieusement, ne les reproduis jamais.
+- Ton professionnel et formel (vouvoiement), sans familiarité ni tournure orale.
+- Ignore les hésitations, répétitions et passages hors sujet.
+- Signale explicitement, dans une section dédiée, ce qui semble manquant ou ambigu dans la
+  source (par exemple une étape mentionnée sans capture, ou un passage inaudible).
 
-1. STRUCTURE DU DOCUMENT :
-   - Tutoriel pas à pas : étapes numérotées claires, chaque étape avec son objectif
-   - Guide technique : sections thématiques, sous-sections si nécessaire
-   - Note de synthèse : introduction, développement structuré, conclusion
+--- SI TUTORIEL PAS À PAS ---
+- Une phrase d'objectif et, si estimable, une durée approximative.
+- Prérequis en liste à puces, si la source en mentionne.
+- Étapes numérotées, chacune avec un titre court et une légende descriptive par capture utilisée.
+- Section finale "Points d'attention" si la source mentionne des erreurs fréquentes ou des cas
+  particuliers.
 
-2. UTILISATION DES CAPTURES :
-   - Sélectionne LA capture la plus illustrative pour chaque étape/concept
-   - Dans le PDF : les captures sont déjà intercalées, référence-les par leur horodatage (ex: "comme montré à 00:45")
-   - Dans le ZIP : utilise le nom du fichier (ex: images/img_001_000m45s.jpg)
+--- SI GUIDE UTILISATEUR ---
+Structure inspirée des guides applicatifs classiques :
+- Sommaire en tête de document.
+- "Objectif et prérequis" : ce que l'utilisateur saura faire à la fin, matériel ou accès
+  nécessaires.
+- Étapes numérotées sous la forme "Étape N – titre", avec sous-étapes en liste à puces et
+  légendes descriptives des captures.
+- Section finale "Points d'attention et assistance" : cas d'erreur courants observés dans la
+  source, et comment obtenir de l'aide (laisse un champ entre crochets à compléter si la source
+  ne donne pas de contact, par exemple [adresse ou numéro d'assistance à compléter]).
+- N'invente jamais de contenu absent de la source (coordonnées, procédures non montrées, etc.).
 
-3. UTILISATION DE LA TRANSCRIPTION :
-   - NE COPIE JAMAIS la transcription brute
-   - Reformule TOUJOURS en langage clair et structuré
-   - La transcription complète en fin de PDF est une ressource supplémentaire : utilise-la pour vérifier les détails
-
-4. QUALITE :
-   - Ignore les hésitations, répétitions, et passages hors sujet
-   - Signale explicitement ce qui semble manquant ou ambigu dans la source
-   - Termine par une section "Points d'attention" ou "Erreurs fréquentes" si la source en mentionne
-
-5. STYLE :
-   - Adapte le ton au public cible
-   - Utilise des titres et sous-titres clairs
-   - Les étapes doivent être actionnables (verbes d'action : cliquer, ouvrir, configurer...)
+--- SI NOTE DE SYNTHÈSE ---
+Registre soutenu, inspiré des notes attendues au concours d'ingénieur territorial :
+- Introduction posant le contexte et les enjeux.
+- Développement argumenté : constat, cadre réglementaire si la source en mentionne, analyse.
+- Propositions ou recommandations.
+- Conclusion courte.
+Les captures ne servent qu'en illustration ponctuelle, jamais comme fil conducteur de la note.
+Ton neutre et synthétique, sans style "tutoriel".
 """
 
 
@@ -487,7 +501,8 @@ def build_pdf(pdf_path: Path, out: Path, title: str, meta: dict, segs: list, fra
         story.append(Paragraph(esc(note), caption))
     story.append(Spacer(1, 6))
     story.append(Paragraph("Consigne pour l'IA", h2))
-    for line in CONSIGNE.strip().splitlines():
+    consigne_commune = {"app": APP_NAME}
+    for line in CONSIGNE.format(**consigne_commune).strip().splitlines():
         if line.strip():
             story.append(Paragraph(esc(line), body))
     story.append(PageBreak())
@@ -505,9 +520,9 @@ def build_pdf(pdf_path: Path, out: Path, title: str, meta: dict, segs: list, fra
             if disp_h > max_h:
                 disp_w, disp_h = max_h * w / h, max_h
             story.append(RLImage(buf, width=disp_w, height=disp_h))
-            story.append(Paragraph(esc(f"Capture {ts(t)} — {item['file']}"), caption))
+            story.append(Paragraph(esc(f"Capture {ts(t)}"), caption))
         except Exception as e:  # noqa: BLE001
-            story.append(Paragraph(esc(f"[capture {ts(t)} illisible : {item['file']} — {e}]"), caption))
+            story.append(Paragraph(esc(f"[capture {ts(t)} illisible : {e}]"), caption))
 
     story.append(PageBreak())
     story.append(Paragraph("Transcription complète", h2))

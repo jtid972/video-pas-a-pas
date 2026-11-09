@@ -108,6 +108,9 @@ def test_sortie_pdf_par_defaut(media):
     reader = PdfReader(io.BytesIO(rep.content))
     texte = "\n".join(p.extract_text() for p in reader.pages)
     assert "Préparation" in texte and "Consigne pour l'IA" in texte and "Transcription complète" in texte
+    assert "{app}" not in texte, "le placeholder {app} n'a pas été remplacé dans le PDF"
+    assert main.APP_NAME in texte
+    assert "img_" not in texte, "un nom de fichier de capture ne doit jamais apparaître dans le PDF"
     assert len(reader.pages) >= 3  # page de garde + au moins une capture + transcription
 
 

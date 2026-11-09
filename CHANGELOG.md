@@ -10,6 +10,12 @@ Les versions de maintenance mensuelles (1.0.1, 1.0.2…) sont décrites dans les
 - **Récupération d'une vidéo par adresse YouTube** (onglet dédié, désactivable avec
   `ENABLE_YOUTUBE=0`), avec raccourci automatique sur les sous-titres existants pour éviter la
   transcription Whisper quand c'est possible.
+- Correction d'un bug d'affichage de la consigne IA dans le PDF (le texte `{app}` n'était pas
+  remplacé par le nom de l'application) et refonte complète de la consigne : légendes de
+  capture descriptives (plus jamais le nom de fichier dans le document final), exigence de
+  français sans faute et de ton professionnel, et trois structures différenciées pour le
+  tutoriel pas à pas, le guide utilisateur (sommaire, étapes, points d'attention et assistance)
+  et la note de synthèse (registre concours d'ingénieur territorial).
 
 ## 1.0.0 — 2026-11-08
 
