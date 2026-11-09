@@ -342,19 +342,48 @@ intelligence artificielle capable de traiter du texte et/ou des images, pour ré
 Résumé : durée {duree}, {n_segs} passage(s) transcrit(s), {n_images} capture(s), langue : {langue}.
 """
 
-CONSIGNE = """Tu reçois un dossier de préparation produit par « {app} » à partir d'une vidéo ou d'un
-enregistrement audio : une transcription horodatée et, s'il y en a, des captures d'écran
-classées dans l'ordre chronologique (fichier preparation.md et dossier images/).
+CONSIGNE = """Consigne pour l'IA
 
-À partir de ce contenu, rédige [un tutoriel pas à pas | un guide | une note de synthèse]
-destiné à [public visé, ex. : débutants].
+Tu reçois une préparation produite par « {app} » à partir d'une vidéo ou d'un enregistrement audio.
+Ce dossier contient :
+- Une transcription horodatée (texte avec horodatages)
+- Des captures d'écran classées dans l'ordre chronologique (si source vidéo)
 
-Consignes :
-- Reformule les explications orales en étapes claires et numérotées (pas de copier-coller de la transcription).
-- Pour chaque étape, choisis la capture la plus utile, si elle aide à comprendre, et indique son nom de fichier.
-- Ignore les hésitations, répétitions et passages hors sujet.
-- Signale ce qui semble manquer ou être ambigu dans la source.
-- Termine par les points d'attention / erreurs fréquentes, si la source en mentionne.
+Format reçu :
+- PDF : ce document (consigne + captures/texte intercalés chronologiquement + transcription complète en fin de document)
+- ZIP : voir preparation.md et CONSIGNE_IA.md
+
+À PARTIR DE CE CONTENU, REDIGE :
+=== REMPLACER PAR : un tutoriel pas à pas | un guide technique | une note de synthèse ===
+DESTINE A :
+=== REMPLACER PAR : débutants | utilisateurs avancés | experts | [autre public] ===
+
+--- INSTRUCTIONS DETAILLEES ---
+
+1. STRUCTURE DU DOCUMENT :
+   - Tutoriel pas à pas : étapes numérotées claires, chaque étape avec son objectif
+   - Guide technique : sections thématiques, sous-sections si nécessaire
+   - Note de synthèse : introduction, développement structuré, conclusion
+
+2. UTILISATION DES CAPTURES :
+   - Sélectionne LA capture la plus illustrative pour chaque étape/concept
+   - Dans le PDF : les captures sont déjà intercalées, référence-les par leur horodatage (ex: "comme montré à 00:45")
+   - Dans le ZIP : utilise le nom du fichier (ex: images/img_001_000m45s.jpg)
+
+3. UTILISATION DE LA TRANSCRIPTION :
+   - NE COPIE JAMAIS la transcription brute
+   - Reformule TOUJOURS en langage clair et structuré
+   - La transcription complète en fin de PDF est une ressource supplémentaire : utilise-la pour vérifier les détails
+
+4. QUALITE :
+   - Ignore les hésitations, répétitions, et passages hors sujet
+   - Signale explicitement ce qui semble manquant ou ambigu dans la source
+   - Termine par une section "Points d'attention" ou "Erreurs fréquentes" si la source en mentionne
+
+5. STYLE :
+   - Adapte le ton au public cible
+   - Utilise des titres et sous-titres clairs
+   - Les étapes doivent être actionnables (verbes d'action : cliquer, ouvrir, configurer...)
 """
 
 
