@@ -1,6 +1,6 @@
 # Vidéo pas à pas — image CPU (linux/amd64 et linux/arm64)
 # Copyright (c) 2026 Johan TIDAS — AGPL-3.0-or-later
-FROM python:3.13-slim
+FROM python:3.15-slim
 
 # PRELOAD_MODEL=small intègre le modèle dans l'image (utile en serverless : pas de
 # téléchargement à chaque démarrage). Vide = le modèle est téléchargé au 1er usage.
